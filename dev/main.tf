@@ -22,17 +22,21 @@ module "vpc" {
   private_subnet_tags = {
     "kubernetes.io/role/internal-elb" = 1
   }
+
+  tags = {
+    Environment = "dev"
+    Terraform   = "true"
+  }
 }
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "20.13.1"
 
-  cluster_name    = "my-k8s"
-  cluster_version = "1.29"
+  cluster_name    = "my-cluster"
+  cluster_version = "1.31"
 
-  cluster_endpoint_public_access           = true
-  enable_cluster_creator_admin_permissions = true
+  cluster_endpoint_public_access = true
 
   cluster_addons = {
     vpc-cni = {
@@ -55,18 +59,14 @@ module "eks" {
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
 
-  create_cluster_security_group = false
-  create_node_security_group    = false
-
   eks_managed_node_group_defaults = {
-    ami_type             = "AL2_x86_64"
-    instance_types       = [var.instance_type]
-    force_update_version = true
-    capacity_type        = "SPOT"
+    ami_type       = "AL2023_x86_64_STANDARD"
+    instance_types = [var.instance_type]
+    capacity_type  = "SPOT"
   }
 
   eks_managed_node_groups = {
-    one = {
+    example_one = {
       name = "node-group-1"
 
       min_size     = 1
@@ -78,7 +78,7 @@ module "eks" {
       }
     }
 
-    two = {
+    example_two = {
       name = "node-group-2"
 
       min_size     = 1
@@ -89,5 +89,14 @@ module "eks" {
         max_unavailable_percentage = 50
       }
     }
+  }
+
+  # Cluster access entry
+  # To add the current caller identity as an administrator
+  enable_cluster_creator_admin_permissions = true
+
+  tags = {
+    Environment = "dev"
+    Terraform   = "true"
   }
 }
